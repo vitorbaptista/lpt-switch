@@ -54,6 +54,30 @@ int main() {
   // Contadores
   int i, j;
 
+  // Status anteriores dos pinos
+  int OLD_PIN_STATUS[26];
+  for (i = 0; i < 26; i++)
+    OLD_PIN_STATUS[i] = 0;
+
+  // Pinos de status: 10, 11, 12, 13 e 15
+  int *STATUS_PINS[5];
+  STATUS_PINS[0] = &OLD_PIN_STATUS[10];
+  STATUS_PINS[1] = &OLD_PIN_STATUS[11];
+  STATUS_PINS[2] = &OLD_PIN_STATUS[12];
+  STATUS_PINS[3] = &OLD_PIN_STATUS[13];
+  STATUS_PINS[4] = &OLD_PIN_STATUS[15];
+
+  // Pinos de dados: 2 até 9
+  int *DATA_PINS[8]
+  DATA_PINS[0] = &OLD_PIN_STATUS[2];
+  DATA_PINS[1] = &OLD_PIN_STATUS[3];
+  DATA_PINS[2] = &OLD_PIN_STATUS[4];
+  DATA_PINS[3] = &OLD_PIN_STATUS[5];
+  DATA_PINS[4] = &OLD_PIN_STATUS[6];
+  DATA_PINS[5] = &OLD_PIN_STATUS[7];
+  DATA_PINS[6] = &OLD_PIN_STATUS[8];
+  DATA_PINS[7] = &OLD_PIN_STATUS[9];
+
   // Inicializa porta paralela
   if (pin_init_user(LPT1) < 0)
     return -1;
@@ -67,9 +91,6 @@ int main() {
 
   // Pega a raiz do display atual
   Window winRoot = XDefaultRootWindow(display);
-
-  // Status anterior dos pinos.
-  int OLD_PIN_STATUS[26];
 
   // Evento
   XKeyEvent event;
