@@ -272,7 +272,7 @@ int pin_is_set(int pins)
   int result = 0;
 
   /* make sure the user is only trying to read an output pin */
-  pins &= lp_input_pins;
+  pins &= lp_output_pins;
 
   if (pins & LPBASE0_MASK) {
     result |= (read_register(0) & (pins & LPBASE0_MASK));
