@@ -68,7 +68,7 @@ int main() {
   STATUS_PINS[4] = &OLD_PIN_STATUS[15];
 
   // Pinos de dados: 2 até 9
-  int *DATA_PINS[8]
+  int *DATA_PINS[8];
   DATA_PINS[0] = &OLD_PIN_STATUS[2];
   DATA_PINS[1] = &OLD_PIN_STATUS[3];
   DATA_PINS[2] = &OLD_PIN_STATUS[4];
