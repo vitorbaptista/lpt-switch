@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <stdio.h>
 
 #include <X11/Xlib.h>
@@ -6,6 +7,14 @@
 #include "parapin.h"
 
 #define KEY_CODE 5
+
+// Ainda não usamos todas as 60 possibilidades para facilitar o cálculo
+// de qual botão está ativo, recebendo os valores do pino de status e
+// de dados.
+// A fórmula é: (status - 9) + [(dados - 2) * 5]
+#define QNTD_BOTOES 40
+
+#define NUM_BOTAO(status, dados) ((status - 9) + (dados - 2) * 5)
 
 // Function to create a keyboard event
 XKeyEvent createKeyEvent(Display *display, Window &win,
@@ -78,10 +87,15 @@ int main() {
   DATA_PINS[6] = &OLD_PIN_STATUS[8];
   DATA_PINS[7] = &OLD_PIN_STATUS[9];
 
+  // Estado anterior dos botões
+  bool BOTOES[QNTD_BOTOES];
+  for (i = 0; i < QNTD_BOTOES; i++)
+    BOTOES[i] = false;
+
   // Inicializa porta paralela
   if (pin_init_user(LPT1) < 0)
     return -1;
-  
+
   pin_output_mode(LP_DATA_PINS);
 
   // Obtém o display do X11
@@ -95,30 +109,70 @@ int main() {
   // Evento
   XKeyEvent event;
 
-  while (true) {
+    // Atualiza o estado anterior de todos os pinos
     for (i = 1; i <= 25; i++)
       OLD_PIN_STATUS[i] = pin_is_set(LP_PIN[i]);
 
+
+  while (true) {
+    // Seta todos os pinos de dados para 0
+    // Assim conseguimos ver se os pinos de status estão
+    // em curto ou não
+    clear_pin(LP_DATA_PINS);
+
+    // Loop entre os pinos de status
     for (i = 10; i <= 15; i++) {
       if (i == 14)
 	continue;
-      
-      for (j = 2; j <= 8; j++) {
-	if (!pin_is_set(LP_PIN[j])) {
-	  if (OLD_PIN_STATUS[j] && OLD_PIN_STATUS[i]) {
-	    // Envia evento de KeyRelease
-	    //enviarEvento(display, winRoot, KEY_CODE, false);
-	    printf("Release: %i %i\n", i, j);
-	  }  
-	} else {
-	  if (pin_is_set(LP_PIN[i]) && !OLD_PIN_STATUS[j]) {
-	    // Envia evento de KeyPress
-	    //enviarEvento(display, winRoot, KEY_CODE, true);
-	    printf("Press: %i %i\n", i, j);
-	  }
-	}
+
+      // Se ele está setado (não está em curto) nem agora 
+      // nem anteriormente, significa que ele não está em 
+      // curto nem acabou de ser soltado. Passa para a 
+      // próxima iteração.
+      if (pin_is_set(LP_PIN[i]) && OLD_PIN_STATUS[i])
+        continue;
+
+      // Atualiza o estado do pino de status atual
+      OLD_PIN_STATUS[i] = pin_is_set(LP_PIN[i]);
+
+      // Para cada pino de dados 
+      for (j = 2; j <= 9; j++) {
+        // Coloca todos em 1. Desta forma, o pino de status não
+        // Ficará em curto. Depois disto, a ideia é colocar os
+        // pinos de dados, um por um, em zero. Caso você coloque
+        // o pino x em 0 e o pino de status fique em curto, significa
+        // que o x e o de status estão ligados.
+        set_pin(LP_DATA_PINS);
+
+        clear_pin(LP_PIN[j]);
+
+        if (!pin_is_set(LP_PIN[i])) {
+          // Significa que o pino i está em curto com j
+
+          // Se ele não estava em curto, então o jogador
+          // acabou de apertá-lo.
+          if (!BOTOES[NUM_BOTAO(i, j)]) {
+            // Lança um evento KeyPress
+            printf("KeyPress: %d e %d\n", i, j);
+          }
+
+          BOTOES[NUM_BOTAO(i, j)] = true;
+        } else {
+          // O pino i não está em curto com j
+
+          // Se ele estava em curto, então o jogador
+          // acabou de soltá-lo.
+          if (BOTOES[NUM_BOTAO(i, j)]) {
+            // Lança um evento KeyRelease
+            printf("KeyRelease: %d e %d\n", i, j);
+          }
+
+          BOTOES[NUM_BOTAO(i, j)] = false;
+        }
       }
     }
+
+    usleep(200);
   }
 
   // Done.
