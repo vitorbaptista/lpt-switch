@@ -88,9 +88,9 @@ int main() {
   DATA_PINS[7] = &OLD_PIN_STATUS[9];
 
   // Estado anterior dos botões
-  bool BOTOES[QNTD_BOTOES];
+  bool ESTADO_BOTAO[QNTD_BOTOES];
   for (i = 0; i < QNTD_BOTOES; i++)
-    BOTOES[i] = false;
+    ESTADO_BOTAO[i] = false;
 
   // Inicializa porta paralela
   if (pin_init_user(LPT1) < 0)
@@ -151,23 +151,23 @@ int main() {
 
           // Se ele não estava em curto, então o jogador
           // acabou de apertá-lo.
-          if (!BOTOES[NUM_BOTAO(i, j)]) {
+          if (!ESTADO_BOTAO[NUM_BOTAO(i, j)]) {
             // Lança um evento KeyPress
             printf("KeyPress: %d e %d\n", i, j);
           }
 
-          BOTOES[NUM_BOTAO(i, j)] = true;
+          ESTADO_BOTAO[NUM_BOTAO(i, j)] = true;
         } else {
           // O pino i não está em curto com j
 
           // Se ele estava em curto, então o jogador
           // acabou de soltá-lo.
-          if (BOTOES[NUM_BOTAO(i, j)]) {
+          if (ESTADO_BOTAO[NUM_BOTAO(i, j)]) {
             // Lança um evento KeyRelease
             printf("KeyRelease: %d e %d\n", i, j);
           }
 
-          BOTOES[NUM_BOTAO(i, j)] = false;
+          ESTADO_BOTAO[NUM_BOTAO(i, j)] = false;
         }
       }
     }
