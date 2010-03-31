@@ -32,7 +32,7 @@
 #
 
 # Turn DEBUG on
-CFLAGS=-DDEBUG
+# CFLAGS=-DDEBUG
 
 # Set this to be the location of your Linux kernel header files (and
 # modules, if you're using the kernel modules).  If you are building
