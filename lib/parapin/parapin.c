@@ -272,7 +272,11 @@ int pin_is_set(int pins)
   int result = 0;
 
   /* make sure the user is only trying to read an output pin */
-  pins &= lp_output_pins;
+  /* No LPTdriver eu preciso ler o estado dos pinos de status
+   * Para isto, precisei comentar esta linha. Será que pode
+   * dar problema?
+   *
+   * pins &= lp_output_pins; */
 
   if (pins & LPBASE0_MASK) {
     result |= (read_register(0) & (pins & LPBASE0_MASK));
