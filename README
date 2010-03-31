@@ -1,0 +1,12 @@
+LPT-Switch para GNU/Linux -- Vítor Baptista
+
+1. Introdução
+   O LPT-Switch é um esquema de conexão de botões de arcade com a porta paralela. Pode gerenciar até 60 entradas, sem nenhum ghosting ou blocking. Desta forma, é uma das melhores (e mais baratas) formas de conectar controles a um PC. Mais informações sobre como montá-lo podem ser encontradas em http://www.arcadebr.com.br/lpt-switch/.
+   Este driver funciona checando as entradas da porta paralela e enviando eventos de teclado, dependendo de que botão foi apertado, para a tela em foco. Esta é uma versão funcional, mas alfa. Considere-a como tal.
+
+2. Instalação
+   Esta versão não é muito configurável e só suporta 40 entradas. Ela tem como dependências o parapin e o libx11-dev. O primeiro está em lib/parapin. Basta você entrar nesta pasta e executar make para instalá-lo. O segundo, no Ubuntu 9.10, pode ser instalado usando aptitude install libx11-dev.
+   Para definir que tecla é pressionada com que botão, você precisará editar o método setupBotoes() em main.c com os valores encontrados em /usr/include/X11/keysym.h.
+
+3. Usando
+   Depois do passo anterior, irá ser gerado o executável lptdriver. Basta executá-lo, como root, usando sudo ./lptdriver. Assim, quando pressionar os botões do arcade, já serão gerados os eventos de teclado.
