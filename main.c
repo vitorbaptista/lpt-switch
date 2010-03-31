@@ -182,13 +182,6 @@ int main() {
         continue;
       }
 
-      // Se ele está setado (não está em curto) nem agora
-      // nem anteriormente, significa que ele não está em
-      // curto nem acabou de ser soltado. Passa para a
-      // próxima iteração.
-      //if (pin_is_set(LP_PIN[i]) && OLD_PIN_STATUS[i])
-      //  continue;
-
       // Atualiza o estado do pino de status atual
       OLD_PIN_STATUS[i] = pin_is_set(LP_PIN[i]);
 
