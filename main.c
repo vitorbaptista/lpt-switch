@@ -1,12 +1,6 @@
-#include <unistd.h>
-#include <stdio.h>
-
-#include <X11/Xlib.h>
-#include <X11/keysym.h>
-
 #include "parapin.h"
 
-#define KEY_CODE 5
+#include "main.h"
 
 // Ainda não usamos todas as 60 possibilidades para facilitar o cálculo
 // de qual botão está ativo, recebendo os valores do pino de status e
@@ -14,89 +8,132 @@
 // A fórmula é: (status - 9) + [(dados - 2) * 5]
 #define QNTD_BOTOES 40
 
-#define NUM_BOTAO(status, dados) ((status - 9) + (dados - 2) * 5)
+#define NUM_BOTAO(status, dados)								\
+	((((status == 15) ? 14 : status) - 9) +				\
+	 (dados - 2) * 5)
+
+void setupBotoes() {
+  // Moedeiro
+  KEYCODE_BOTAO[40] = XK_9;
+
+  // Player 1
+  // Direcionais
+	KEYCODE_BOTAO[17] = XK_Up;
+	KEYCODE_BOTAO[20] = XK_Down;
+	KEYCODE_BOTAO[19] = XK_Left;
+	KEYCODE_BOTAO[18] = XK_Right;
+
+  // Start
+	KEYCODE_BOTAO[16] = XK_space;
+
+  // Botões de cima
+	KEYCODE_BOTAO[29] = XK_1;
+	KEYCODE_BOTAO[28] = XK_2;
+	KEYCODE_BOTAO[27] = XK_3;
+	KEYCODE_BOTAO[26] = XK_4;
+
+  // Botões de baixo
+	KEYCODE_BOTAO[34] = XK_5;
+	KEYCODE_BOTAO[32] = XK_6;
+	KEYCODE_BOTAO[33] = XK_7;
+	KEYCODE_BOTAO[31] = XK_8;
+
+  // Botões laterais
+	KEYCODE_BOTAO[35] = KEYCODE_BOTAO[29];
+	KEYCODE_BOTAO[30] = KEYCODE_BOTAO[27];
+
+
+  // Player 2
+  // Direcionais
+	KEYCODE_BOTAO[24] = XK_w;
+	KEYCODE_BOTAO[22] = XK_s;
+	KEYCODE_BOTAO[21] = XK_a;
+	KEYCODE_BOTAO[23] = XK_d;
+
+  // Start
+	KEYCODE_BOTAO[25] = XK_Return;
+
+  // Botões de cima
+	KEYCODE_BOTAO[7] = XK_t;
+	KEYCODE_BOTAO[9] = XK_y;
+	KEYCODE_BOTAO[8] = XK_u;
+	KEYCODE_BOTAO[10] = XK_i;
+
+  // Botões de baixo
+	KEYCODE_BOTAO[14] = XK_g;
+	KEYCODE_BOTAO[12] = XK_h;
+	KEYCODE_BOTAO[13] = XK_j;
+	KEYCODE_BOTAO[15] = XK_k;
+
+  // Botões laterais
+	KEYCODE_BOTAO[11] = KEYCODE_BOTAO[28];
+	KEYCODE_BOTAO[6] = KEYCODE_BOTAO[34];
+}
 
 // Function to create a keyboard event
 XKeyEvent createKeyEvent(Display *display, Window &win,
-                           Window &winRoot, bool press,
-                           int keycode, int modifiers)
+												 Window &winRoot, bool press,
+												 int keycode, int modifiers)
 {
-   XKeyEvent event;
+	XKeyEvent event;
 
-   event.display     = display;
-   event.window      = win;
-   event.root        = winRoot;
-   event.subwindow   = None;
-   event.time        = CurrentTime;
-   event.x           = 1;
-   event.y           = 1;
-   event.x_root      = 1;
-   event.y_root      = 1;
-   event.same_screen = True;
-   event.keycode     = XKeysymToKeycode(display, keycode);
-   event.state       = modifiers;
+	event.display     = display;
+	event.window      = win;
+	event.root        = winRoot;
+	event.subwindow   = None;
+	event.time        = CurrentTime;
+	event.x           = 1;
+	event.y           = 1;
+	event.x_root      = 1;
+	event.y_root      = 1;
+	event.same_screen = True;
+	event.keycode     = XKeysymToKeycode(display, keycode);
+	event.state       = modifiers;
 
-   if(press)
-      event.type = KeyPress;
-   else
-      event.type = KeyRelease;
+	if(press)
+		event.type = KeyPress;
+	else
+		event.type = KeyRelease;
 
-   return event;
+	return event;
 }
 
-void enviarEvento(Display *display, Window &winRoot, int keyCode, bool isKeyDown) {
+void enviarEvento(Display *display, Window &winRoot, int keyCode, bool isKeyPressed) {
   // Variáveis para guardar a janela com foco
   Window winFocus;
   int revert;
   XGetInputFocus(display, &winFocus, &revert);
 
   // Send a fake key press event to the window.
-  XKeyEvent event = createKeyEvent(display, winFocus, winRoot, true, keyCode, 0);
+  XKeyEvent event = createKeyEvent(display, winFocus, winRoot, isKeyPressed, keyCode, 0);
   XSendEvent(event.display, event.window, True, KeyPressMask, (XEvent *)&event);
-  
-  // Send a fake key release event to the window.
-  event = createKeyEvent(display, winFocus, winRoot, false, keyCode, 0);
-  XSendEvent(event.display, event.window, True, KeyPressMask, (XEvent *)&event);
+
+  // TODO: Não sei porque, mas esta segunda chamada do método
+  // parece dar um "flush" no buffer...
+  XGetInputFocus(display, &winFocus, &revert);
 }
 
 int main() {
+  setupBotoes();
+
   // Contadores
   int i, j;
-
-  // Status anteriores dos pinos
-  int OLD_PIN_STATUS[26];
-  for (i = 0; i < 26; i++)
-    OLD_PIN_STATUS[i] = 0;
-
-  // Pinos de status: 10, 11, 12, 13 e 15
-  int *STATUS_PINS[5];
-  STATUS_PINS[0] = &OLD_PIN_STATUS[10];
-  STATUS_PINS[1] = &OLD_PIN_STATUS[11];
-  STATUS_PINS[2] = &OLD_PIN_STATUS[12];
-  STATUS_PINS[3] = &OLD_PIN_STATUS[13];
-  STATUS_PINS[4] = &OLD_PIN_STATUS[15];
-
-  // Pinos de dados: 2 até 9
-  int *DATA_PINS[8];
-  DATA_PINS[0] = &OLD_PIN_STATUS[2];
-  DATA_PINS[1] = &OLD_PIN_STATUS[3];
-  DATA_PINS[2] = &OLD_PIN_STATUS[4];
-  DATA_PINS[3] = &OLD_PIN_STATUS[5];
-  DATA_PINS[4] = &OLD_PIN_STATUS[6];
-  DATA_PINS[5] = &OLD_PIN_STATUS[7];
-  DATA_PINS[6] = &OLD_PIN_STATUS[8];
-  DATA_PINS[7] = &OLD_PIN_STATUS[9];
-
-  // Estado anterior dos botões
-  bool ESTADO_BOTAO[QNTD_BOTOES];
-  for (i = 0; i < QNTD_BOTOES; i++)
-    ESTADO_BOTAO[i] = false;
 
   // Inicializa porta paralela
   if (pin_init_user(LPT1) < 0)
     return -1;
 
   pin_output_mode(LP_DATA_PINS);
+
+  // Status anteriores dos pinos
+  int OLD_PIN_STATUS[26];
+  for (i = 1; i <= 25; i++)
+    OLD_PIN_STATUS[i] = pin_is_set(LP_PIN[i]);
+
+  // Estado anterior dos botões
+  bool ESTADO_BOTAO[QNTD_BOTOES];
+  for (i = 0; i < QNTD_BOTOES; i++)
+    ESTADO_BOTAO[i] = false;
 
   // Obtém o display do X11
   Display *display = XOpenDisplay(0);
@@ -106,14 +143,6 @@ int main() {
   // Pega a raiz do display atual
   Window winRoot = XDefaultRootWindow(display);
 
-  // Evento
-  XKeyEvent event;
-
-    // Atualiza o estado anterior de todos os pinos
-    for (i = 1; i <= 25; i++)
-      OLD_PIN_STATUS[i] = pin_is_set(LP_PIN[i]);
-
-
   while (true) {
     // Seta todos os pinos de dados para 0
     // Assim conseguimos ver se os pinos de status estão
@@ -122,20 +151,33 @@ int main() {
 
     // Loop entre os pinos de status
     for (i = 10; i <= 15; i++) {
-      if (i == 14)
-	continue;
+      if (i == 14) {
+        // Se estiver em curto
+        if (!pin_is_set(LP_PIN[i])) {
+          // E não estava em curto
+          if (OLD_PIN_STATUS[i])
+            enviarEvento(display, winRoot, KEYCODE_BOTAO[40], true);
+        }
+        else {
+          if (!OLD_PIN_STATUS[i])
+            enviarEvento(display, winRoot, KEYCODE_BOTAO[40], false);
+        }
 
-      // Se ele está setado (não está em curto) nem agora 
-      // nem anteriormente, significa que ele não está em 
-      // curto nem acabou de ser soltado. Passa para a 
-      // próxima iteração.
-      if (pin_is_set(LP_PIN[i]) && OLD_PIN_STATUS[i])
+        OLD_PIN_STATUS[i] = pin_is_set(LP_PIN[i]);
         continue;
+      }
+
+      // Se ele está setado (não está em curto) nem agora
+      // nem anteriormente, significa que ele não está em
+      // curto nem acabou de ser soltado. Passa para a
+      // próxima iteração.
+      //if (pin_is_set(LP_PIN[i]) && OLD_PIN_STATUS[i])
+      //  continue;
 
       // Atualiza o estado do pino de status atual
       OLD_PIN_STATUS[i] = pin_is_set(LP_PIN[i]);
 
-      // Para cada pino de dados 
+      // Para cada pino de dados
       for (j = 2; j <= 9; j++) {
         // Coloca todos em 1. Desta forma, o pino de status não
         // Ficará em curto. Depois disto, a ideia é colocar os
@@ -153,9 +195,8 @@ int main() {
           // acabou de apertá-lo.
           if (!ESTADO_BOTAO[NUM_BOTAO(i, j)]) {
             // Lança um evento KeyPress
-            printf("KeyPress: %d e %d\n", i, j);
+            enviarEvento(display, winRoot, KEYCODE_BOTAO[NUM_BOTAO(i, j)], true);
           }
-
           ESTADO_BOTAO[NUM_BOTAO(i, j)] = true;
         } else {
           // O pino i não está em curto com j
@@ -164,15 +205,14 @@ int main() {
           // acabou de soltá-lo.
           if (ESTADO_BOTAO[NUM_BOTAO(i, j)]) {
             // Lança um evento KeyRelease
-            printf("KeyRelease: %d e %d\n", i, j);
+            enviarEvento(display, winRoot, KEYCODE_BOTAO[NUM_BOTAO(i, j)], false);
           }
-
           ESTADO_BOTAO[NUM_BOTAO(i, j)] = false;
         }
+
+			  usleep(10);
       }
     }
-
-    usleep(200);
   }
 
   // Done.
